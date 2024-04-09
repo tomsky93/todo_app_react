@@ -1,7 +1,7 @@
 ﻿# ToDo App
 ## Description
 
-Simple Todo application is built using Django for the backend and React fot the frontend.
+Simple Todo application is built using Django for the backend and React for the frontend.
 
 ToDo Application is focused on simplicity and effectiveness. It allows you to:
 
@@ -37,6 +37,7 @@ Clone the repository: git clone [repository-url]
 2. Install required dependencies: `npm install`
 3. Start server: `npm start`
 
-![todo_app_presentation](https://github.com/tomsky93/todo_app_react_/assets/81223322/d1e6fd14-0efa-407f-856e-46de8723bc0a)
+
+[todo_presentation.webm](https://github.com/tomsky93/todo_app_react/assets/81223322/679d4153-025b-468d-bd9c-5723551b6adf)
 
    
