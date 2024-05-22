@@ -38,6 +38,6 @@ Clone the repository: git clone [repository-url]
 3. Start server: `npm start`
 
 
-[todo_presentation.webm](https://github.com/tomsky93/todo_app_react/assets/81223322/679d4153-025b-468d-bd9c-5723551b6adf)
 
    
+[todo presentation.webm](https://github.com/tomsky93/todo_app_react/assets/81223322/44d5ba13-d201-4097-91d7-831d3a144817)
