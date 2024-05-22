@@ -15,7 +15,8 @@ import { DatePicker } from "@mui/x-date-pickers";
 import { LocalizationProvider } from "@mui/x-date-pickers/LocalizationProvider";
 import { AdapterDayjs } from "@mui/x-date-pickers/AdapterDayjs";
 import dayjs from "dayjs";
-import { useSnackbar } from "./SnackBarProvider";
+import { useSnackbar } from "../contexts/SnackBarProvider";
+import { useTodoContext } from '../contexts/TodoContext';
 
 const DEFAULT_FORM_DATA = {
   title: "",
@@ -29,20 +30,14 @@ const ERROR_MESSAGES = {
   category: "Category is required",
 };
 
-const AddToDoModal = ({
-  isOpen,
-  handleClose,
-  handleAdd,
-  handleEdit,
-  categories,
-  todo,
-}) => {
+const AddEditToDoModal = ({ isOpen, handleClose, categories, todo}) => {
   const [formData, setFormData] = useState(DEFAULT_FORM_DATA);
-  const [submitted, setSubmitted] = useState(false);
+  const [errors, setErrors] = useState({});
   const { showSnackbar } = useSnackbar();
+  const { handleAdd, handleEdit } = useTodoContext();
 
   useEffect(() => {
-    if (todo) {
+    if (isOpen && todo) {
       setFormData({
         title: todo.title || "",
         description: todo.description || "",
@@ -52,7 +47,7 @@ const AddToDoModal = ({
     } else {
       setFormData(DEFAULT_FORM_DATA);
     }
-    setSubmitted(false);
+    setErrors({});
   }, [isOpen, todo]);
 
   const handleFieldChange = (field, value) => {
@@ -60,62 +55,65 @@ const AddToDoModal = ({
       ...prevState,
       [field]: value,
     }));
+    if (field === 'title') {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [field]: !value.trim() ? ERROR_MESSAGES[field] : "",
+      }));
+    } else if (field === 'category') {
+      setErrors((prevErrors) => ({
+        ...prevErrors,
+        [field]: !value ? ERROR_MESSAGES[field] : "",
+      }));
+    }
   };
 
   const validate = () => {
-    const errors = {
-      title: !formData.title.trim(),
-      category: !formData.category,
-    };
-    return errors;
+    const newErrors = {};
+    if (!formData.title.trim()) {
+      newErrors.title = ERROR_MESSAGES.title;
+    }
+    if (!formData.category) {
+      newErrors.category = ERROR_MESSAGES.category;
+    }
+    return newErrors;
   };
 
-  const getErrorMessage = (fieldName) => {
-    return submitted && validate()[fieldName] ? ERROR_MESSAGES[fieldName] : "";
-  };
   const handleSubmit = (event) => {
     event.preventDefault();
-    setSubmitted(true);
-
-    try {
-      const errors = validate();
-      if (errors.title || errors.category) {
-        throw new Error("Validation failed");
-      }
-      const formattedDate = formData.due_date
-        ? dayjs(formData.due_date).format("YYYY-MM-DD")
-        : null;
-
-      if (todo) {
-        handleEdit({
-          ...formData,
-          id: todo.id,
-          due_date: formattedDate,
-          completed: todo.completed,
-        });
-        showSnackbar("ToDo updated successfully.", "success");
-      } else {
-        handleAdd({ ...formData, due_date: formattedDate, completed: false });
-        showSnackbar("ToDo added successfully.", "success");
-      }
-
-      setFormData(DEFAULT_FORM_DATA);
-      handleClose();
-    } catch (error) {
-      if (error.message === "Validation failed") {
-        showSnackbar(
-          "Validation failed. Please check your input and try again.",
-          "error"
-        );
-      } else {
-        showSnackbar("Something went wrong. Please try again.", "error");
-      }
+    const newErrors = validate();
+    if (Object.keys(newErrors).length > 0) {
+      setErrors(newErrors);
+      showSnackbar(
+        "Validation failed. Please check your input and try again.",
+        "error"
+      );
+      return;
     }
+
+    const formattedDate = formData.due_date
+      ? dayjs(formData.due_date).format("YYYY-MM-DD")
+      : null;
+
+    if (todo) {
+      handleEdit({
+        ...formData,
+        id: todo.id,
+        due_date: formattedDate,
+        completed: todo.completed,
+      });
+      } 
+      else {
+      handleAdd({ ...formData, due_date: formattedDate, completed: false });
+       }
+
+    setFormData(DEFAULT_FORM_DATA);
+    handleClose();
   };
 
   const handleCancel = () => {
     setFormData(DEFAULT_FORM_DATA);
-    setSubmitted(false);
+    setErrors({});
     handleClose();
   };
 
@@ -128,8 +126,8 @@ const AddToDoModal = ({
       <DialogContent>
         <TextField
           label="Title"
-          error={submitted && validate().title}
-          helperText={getErrorMessage("title")}
+          error={Boolean(errors.title)}
+          helperText={errors.title}
           name="title"
           variant="outlined"
           value={formData.title}
@@ -153,12 +151,11 @@ const AddToDoModal = ({
           <Select
             labelId="category-select-label"
             id="category-select"
-            error={submitted && validate().category}
+            error={Boolean(errors.category)}
             name="category"
             value={formData.category}
             label="Category"
             onChange={(e) => handleFieldChange("category", e.target.value)}
-            sx={{ borderColor: submitted && validate().category ? "red" : "" }}
           >
             <MenuItem value="">Select Category</MenuItem>
             {categories.map((cat) => (
@@ -167,8 +164,8 @@ const AddToDoModal = ({
               </MenuItem>
             ))}
           </Select>
-          {submitted && validate().category && (
-            <FormHelperText error>{getErrorMessage("category")}</FormHelperText>
+          {errors.category && (
+            <FormHelperText error>{errors.category}</FormHelperText>
           )}
         </FormControl>
         <LocalizationProvider dateAdapter={AdapterDayjs}>
@@ -190,11 +187,11 @@ const AddToDoModal = ({
       <DialogActions>
         <Button onClick={handleCancel}>Cancel</Button>
         <Button onClick={handleSubmit} variant="contained" color="primary">
-          {todo ? "Save" : "Add"}
+          Save
         </Button>
       </DialogActions>
     </Dialog>
   );
 };
 
-export default AddToDoModal;
+export default AddEditToDoModal;

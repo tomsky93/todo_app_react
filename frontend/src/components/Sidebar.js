@@ -1,4 +1,4 @@
-import React, { useState, useLayoutEffect } from "react";
+import React, { useState, useLayoutEffect } from 'react';
 import {
   Typography,
   Drawer,
@@ -10,68 +10,54 @@ import {
   useMediaQuery,
   Collapse,
   Divider,
-} from "@mui/material";
-import MenuIcon from "@mui/icons-material/Menu";
-import AddIcon from "@mui/icons-material/Add";
-import ExpandMoreIcon from "@mui/icons-material/ExpandMore";
-import ExpandLessIcon from "@mui/icons-material/ExpandLess";
-import CategoryForm from "./CategoryForm";
-import AddEditToDoModal from "./AddEditToDoModal";
-import axios from "axios";
+} from '@mui/material';
+import MenuIcon from '@mui/icons-material/Menu';
+import AddIcon from '@mui/icons-material/Add';
+import ExpandMoreIcon from '@mui/icons-material/ExpandMore';
+import ExpandLessIcon from '@mui/icons-material/ExpandLess';
+import CategoryForm from './CategoryForm';
+import AddEditToDoModal from './AddEditToDoModal';
+import { useTodoContext } from '../contexts/TodoContext';
 
-const Sidebar = ({
-  categories,
-  onAddToDo,
-  onSelectCategory,
-  selectedCategory,
-  handleCategoryAdded,
-  fetchTodos,
-  currentTodo,
-}) => {
+const Sidebar = () => {
+  const {
+    selectedCategory,
+    setSelectedCategory,
+    setFilterDate,
+    categories,
+    isModalOpen,
+    modalType,
+    handleOpenModal,
+    handleCloseModal,
+    handleAdd,
+  } = useTodoContext();
+
   const theme = useTheme();
-  const isLargeScreen = useMediaQuery(theme.breakpoints.up("md"));
-  const [isDrawerOpen, setIsDrawerOpen] = useState(false);
+  const isLargeScreen = useMediaQuery(theme.breakpoints.up('md'));
+  const [isDrawerOpen, setIsDrawerOpen] = useState(isLargeScreen);
   const [isExpanded, setIsExpanded] = useState(true);
-  const [isCategoryModalOpen, setIsCategoryModalOpen] = useState(false);
-  const [isToDoModalOpen, setIsToDoModalOpen] = useState(false);
   const [selectedFilter, setSelectedFilter] = useState(null);
+
   const toggleDrawer = () => setIsDrawerOpen(!isDrawerOpen);
   const handleToggle = () => setIsExpanded(!isExpanded);
-  const openCategoryModal = () => setIsCategoryModalOpen(true);
-  const closeCategoryModal = () => setIsCategoryModalOpen(false);
-  const openToDoModal = () => setIsToDoModalOpen(true);
-  const closeToDoModal = () => setIsToDoModalOpen(false);
+
   const handleClick = (filter) => () => {
     setSelectedFilter(filter);
-    fetchTodos(filter, null);
+    setFilterDate(filter);
+    setSelectedCategory(null);
   };
 
   useLayoutEffect(() => {
     setIsDrawerOpen(isLargeScreen);
   }, [isLargeScreen]);
 
-  const handleAddToDo = async (newToDo) => {
-    try {
-      const response = await axios.post("api/todos/", newToDo);
-      onSelectCategory(response.data.categoryId);
-      onAddToDo(onSelectCategory(response.data.category));
-      console.log(
-        "Selected category:",
-        onSelectCategory(response.data.category)
-      );
-    } catch (error) {
-      console.error("Could not add todo:", error);
-    }
-  };
-
   const filterLabels = {
-    today: "Today",
-    next7days: "Next 7 days",
-    overdue: "Overdue",
-    noduedate: "No due date",
+    today: 'Today',
+    next7days: 'Next 7 days',
+    overdue: 'Overdue',
+    noduedate: 'No due date',
   };
 
-  
   return (
     <>
       <IconButton
@@ -79,22 +65,21 @@ const Sidebar = ({
         aria-label="open drawer"
         edge="start"
         onClick={toggleDrawer}
-        sx={{ mr: 2, display: isLargeScreen ? "none" : "block" }}
+        sx={{ mr: 2, display: isLargeScreen ? 'none' : 'block' }}
       >
         <MenuIcon />
       </IconButton>
       <Drawer
-        variant={isLargeScreen ? "permanent" : "temporary"}
+        variant={isLargeScreen ? 'permanent' : 'temporary'}
         open={isDrawerOpen}
         onClose={toggleDrawer}
         ModalProps={{ keepMounted: true }}
       >
         <List>
-          <Typography variant="poster">ToDo App</Typography>
-
+          <Typography variant="poster" sx={{ p: 2 }}>ToDo App</Typography>
           <ListItem>
             <ListItemText primary="Category" />
-            <IconButton onClick={openCategoryModal}>
+            <IconButton onClick={() => handleOpenModal('category', null)}>
               <AddIcon />
             </IconButton>
             <IconButton onClick={handleToggle}>
@@ -103,23 +88,29 @@ const Sidebar = ({
           </ListItem>
           <Divider />
           <Collapse in={isExpanded} timeout="auto" unmountOnExit>
-            {categories.map((category) => (
-              <ListItem
-                button
-                key={category.id}
-                selected={selectedFilter === category.id}
-                onClick={() => {
-                  setSelectedFilter(category.id);
-                  onSelectCategory(category.id);
-                }}
-              >
-                <ListItemText primary={category.name} />
+            {categories.length > 0 ? (
+              categories.map((category) => (
+                <ListItem
+                  button
+                  key={category.id}
+                  selected={selectedCategory === category.id}
+                  onClick={() => {
+                    setSelectedFilter(null);
+                    setSelectedCategory(category.id);
+                    setFilterDate(null);
+                  }}
+                >
+                  <ListItemText primary={category.name} />
+                </ListItem>
+              ))
+            ) : (
+              <ListItem>
+                <ListItemText primary="No categories available" />
               </ListItem>
-            ))}
+            )}
           </Collapse>
           <Divider />
-
-          {["today", "next7days", "overdue", "noduedate"].map((filter) => (
+          {['today', 'next7days', 'overdue', 'noduedate'].map((filter) => (
             <ListItem
               button
               key={filter}
@@ -130,25 +121,20 @@ const Sidebar = ({
             </ListItem>
           ))}
         </List>
-        <ListItem button onClick={openToDoModal}>
+        <ListItem button onClick={() => handleOpenModal('add', null)}>
           <ListItemText primary="Add ToDo" />
           <AddIcon />
         </ListItem>
       </Drawer>
       <CategoryForm
-        isModalOpen={isCategoryModalOpen}
-        handleCloseModal={() => {
-          closeCategoryModal();
-          handleCategoryAdded();
-        }}
+        isOpen={isModalOpen && modalType === 'category'}
+        handleClose={handleCloseModal}
       />
       <AddEditToDoModal
-        isOpen={isToDoModalOpen}
-        handleClose={closeToDoModal}
-        handleAdd={handleAddToDo}
+        isOpen={isModalOpen && modalType === 'add'}
+        handleClose={handleCloseModal}
         categories={categories}
-        selectedCategory={selectedCategory}
-        todo={currentTodo}
+        onSave={handleAdd}
       />
     </>
   );

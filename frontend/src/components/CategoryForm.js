@@ -1,5 +1,4 @@
 import React, { useState } from "react";
-import axios from "axios";
 import {
   Button,
   Dialog,
@@ -8,30 +7,28 @@ import {
   DialogTitle,
   TextField,
 } from "@mui/material";
-import { useSnackbar } from "./SnackBarProvider";
+import { useTodoContext } from '../contexts/TodoContext';
+import { useSnackbar } from '../contexts/SnackBarProvider';
 
-const CategoryForm = ({ isModalOpen, handleCloseModal }) => {
+const CategoryForm = ({ isOpen, handleClose }) => {
   const [name, setName] = useState("");
+  const { handleAddCategory } = useTodoContext();
   const { showSnackbar } = useSnackbar();
 
   const handleSubmit = async (event) => {
     event.preventDefault();
     try {
-      await axios.post("/api/categories/", { name });
-      setName("");
-      handleCloseModal();
-      showSnackbar("Category added successfully.", "success");
+      await handleAddCategory(name);
+      handleClose();
     } catch (error) {
-      console.error(error);
-      handleCloseModal();
-      showSnackbar("Error occurred while adding category.", "error");
+      showSnackbar("Error adding category", "error");
     }
-  };
+  }
 
   return (
     <Dialog
-      open={isModalOpen}
-      onClose={handleCloseModal}
+      open={isOpen}
+      onClose={handleClose}
       sx={{ "& .MuiDialog-paper": { minWidth: "300px" } }}
     >
       <DialogTitle>Add New Category</DialogTitle>
@@ -51,7 +48,7 @@ const CategoryForm = ({ isModalOpen, handleCloseModal }) => {
           />
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button onClick={handleClose}>Cancel</Button>
           <Button type="submit" variant="contained" color="primary">
             Add
           </Button>
@@ -59,6 +56,6 @@ const CategoryForm = ({ isModalOpen, handleCloseModal }) => {
       </form>
     </Dialog>
   );
-};
+}
 
 export default CategoryForm;

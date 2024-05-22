@@ -19,8 +19,7 @@ class ToDoList(APIView):
         today = datetime.now().date()
         
         if filter_date == 'today':
-            tomorrow = today + timedelta(days=1)
-            todos = todos.filter(due_date__range=[today, tomorrow])
+            todos = todos.filter(due_date__range=[today, today])
         elif filter_date == 'next7days':
             next_7_days = today + timedelta(days=7)
             todos = todos.filter(due_date__range=[today, next_7_days])

@@ -1,12 +1,5 @@
-import React, { useState } from "react";
-import { format } from "date-fns";
+import React, { useState } from 'react';
 import {
-  Dialog,
-  DialogActions,
-  DialogContent,
-  DialogContentText,
-  DialogTitle,
-  Button,
   List,
   ListItem,
   ListItemIcon,
@@ -14,32 +7,32 @@ import {
   IconButton,
   Checkbox,
   Box,
-} from "@mui/material";
-import DeleteIcon from "@mui/icons-material/Delete";
-import EditIcon from "@mui/icons-material/Edit";
-import { useSnackbar } from "./SnackBarProvider";
+  Dialog,
+  DialogActions,
+  DialogContent,
+  DialogContentText,
+  DialogTitle,
+  Button,
+} from '@mui/material';
+import DeleteIcon from '@mui/icons-material/Delete';
+import EditIcon from '@mui/icons-material/Edit';
+import { format } from 'date-fns';
+import { useTodoContext } from '../contexts/TodoContext';
+import AddEditToDoModal from './AddEditToDoModal';
 
-const ToDoList = ({ todos, updateToDo, deleteToDo, onEdit }) => {
-  const [open, setOpen] = useState(false);
-  const [toDelete, setToDelete] = useState(null);
+const ToDoList = () => {
+  const {
+    todos,
+    isModalOpen,
+    modalType,
+    currentTodo,
+    handleOpenModal,
+    handleCloseModal,
+    handleDelete,
+    handleEdit,
+    categories,
+  } = useTodoContext();
   const [showCompleted, setShowCompleted] = useState(false);
-  const { showSnackbar } = useSnackbar();
-
-  const handleOpen = (todoId) => {
-    setOpen(true);
-    setToDelete(todoId);
-  };
-
-  const handleClose = () => {
-    setOpen(false);
-    setToDelete(null);
-  };
-
-  const handleDelete = () => {
-    deleteToDo(toDelete);
-    showSnackbar("Todo deleted successfully");
-    handleClose();
-  };
 
   const toggleShowCompleted = () => {
     setShowCompleted(!showCompleted);
@@ -50,72 +43,67 @@ const ToDoList = ({ todos, updateToDo, deleteToDo, onEdit }) => {
   };
 
   const renderListItem = (todo) => {
-    if (showCompleted || !todo.completed) {
-      return (
-        <ListItem
-          key={todo.id}
-          secondaryAction={
-            <>
-              <IconButton
-                edge="end"
-                aria-label="edit"
-                onClick={() => onEdit(todo)}
-              >
-                <EditIcon />
-              </IconButton>
-              <IconButton
-                edge="end"
-                aria-label="delete"
-                onClick={() => handleOpen(todo.id)}
-              >
-                <DeleteIcon />
-              </IconButton>
-            </>
-          }
-          disablePadding
+    if (!todo) return null;
+
+    return (
+      <ListItem
+        key={todo.id}
+        secondaryAction={
+          <>
+            <IconButton
+              edge="end"
+              aria-label="edit"
+              onClick={() => handleOpenModal('edit', todo)}
+            >
+              <EditIcon />
+            </IconButton>
+            <IconButton
+              edge="end"
+              aria-label="delete"
+              onClick={() => handleOpenModal('delete', todo)}
+            >
+              <DeleteIcon />
+            </IconButton>
+          </>
+        }
+        disablePadding
+        sx={{
+          "&:hover": {
+            backgroundColor: "action.hover",
+          },
+          ".MuiListItemText-secondary": {
+            maxWidth: "calc(100% - 60px)",
+            whiteSpace: "normal",
+            wordBreak: "break-word",
+          },
+        }}
+      >
+        <ListItemIcon>
+          <Checkbox
+            edge="start"
+            checked={todo.completed}
+            onChange={() => handleEdit({ ...todo, completed: !todo.completed })}
+            tabIndex={-1}
+            disableRipple
+          />
+        </ListItemIcon>
+        <ListItemText
+          primary={todo.title}
+          secondary={`${todo.due_date ? formatDate(todo.due_date) : ""} ${todo.description}`}
           sx={{
-            "&:hover": {
-              backgroundColor: "action.hover",
+            "& .MuiListItemText-primary": {
+              textDecoration: todo.completed ? "line-through" : "none",
+              textUnderlineOffset: "3px",
+              transition: "text-decoration 0.3s ease",
             },
-            ".MuiListItemText-secondary": {
-              maxWidth: "calc(100% - 60px)",
-              whiteSpace: "normal",
-              wordBreak: "break-word",
+            "& .MuiListItemText-secondary": {
+              textDecoration: todo.completed ? "line-through" : "none",
+              display: "block",
             },
           }}
-        >
-          <ListItemIcon>
-            <Checkbox
-              edge="start"
-              checked={todo.completed}
-              onChange={() =>
-                updateToDo({ ...todo, completed: !todo.completed })
-              }
-              tabIndex={-1}
-              disableRipple
-            />
-          </ListItemIcon>
-          <ListItemText
-            primary={todo.title}
-            secondary={`${todo.due_date ? formatDate(todo.due_date) : ""} ${
-              todo.description
-            }`}
-            sx={{
-              "& .MuiListItemText-primary": {
-                textDecoration: todo.completed ? "line-through" : "none",
-                textUnderlineOffset: "3px",
-                transition: "text-decoration 0.3s ease",
-              },
-              "& .MuiListItemText-secondary": {
-                textDecoration: todo.completed ? "line-through" : "none",
-                display: "block",
-              },
-            }}
-          />
-        </ListItem>
-      );
-    }
-    return null;
+        />
+      </ListItem>
+    );
   };
 
   const incompleteTodos = todos.filter((todo) => !todo.completed);
@@ -161,21 +149,20 @@ const ToDoList = ({ todos, updateToDo, deleteToDo, onEdit }) => {
           </Button>
         </Box>
       )}
-      <Dialog open={open} onClose={handleClose}>
-        <DialogTitle>{"Delete confirmation"}</DialogTitle>
+      <AddEditToDoModal
+        isOpen={isModalOpen && modalType === 'edit'}
+        handleClose={handleCloseModal}
+        categories={categories}
+        todo={currentTodo}
+      />
+      <Dialog open={isModalOpen && modalType === 'delete'} onClose={handleCloseModal}>
+        <DialogTitle>{'Delete confirmation'}</DialogTitle>
         <DialogContent>
-          <DialogContentText>
-            Are you sure you want to delete this task?
-          </DialogContentText>
+          <DialogContentText>Are you sure you want to delete this task?</DialogContentText>
         </DialogContent>
         <DialogActions>
-          <Button onClick={handleClose}>Cancel</Button>
-          <Button
-            variant="outlined"
-            color="error"
-            onClick={handleDelete}
-            autoFocus
-          >
+          <Button onClick={handleCloseModal}>Cancel</Button>
+          <Button variant='outlined' color='error' onClick={handleDelete} autoFocus>
             Delete
           </Button>
         </DialogActions>
